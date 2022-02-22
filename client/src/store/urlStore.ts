@@ -2,11 +2,13 @@
 
 export default class UrlStore{
 
-    //private static urlEmim: string = 'http://localhost:5006/'; https://telemedicina.emim.ro:444/api/medici
-    //private static urlEmim: string = 'http://82.77.27.57:56002/';
-    private static urlEmim: string = 'https://telemedicina.emim.ro:444/';
-    static urlEmimChat: string = this.urlEmim + 'chat';
-    static urlEmimApi: string = this.urlEmim + 'api';
-    static urlVideoChat: string = 'https://video-chat-luci.herokuapp.com/';
+    //private static urlEmimBase: string = 'http://localhost:5006/'; 
+    private static urlEmimBase: string = 'https://telemedicina.emim.ro:444/';
+
+    static urlEmimChat: string = this.urlEmimBase + 'chat'; //aici vorbesc prin SignalR
+
+    static urlEmimApi: string = this.urlEmimBase + 'api'; //aici fac apelnpm starturi obisnuite din baza de date EMIM
+
+    static urlVideoChat: string =  'https://video-chat-luci.herokuapp.com/'; //'http://localhost:5000/';//
 
 }

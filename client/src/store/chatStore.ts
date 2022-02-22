@@ -6,7 +6,7 @@ import UrlStore from "./urlStore";
 
 export default class ChatStore {
 
-    chatUrl = UrlStore.urlEmimChat;    //"http://localhost:5006/chat";
+    chatUrl = UrlStore.urlEmimChat;    
 
     comments: ChatModel | null  = null;
     hubConnection: HubConnection | null = null;
@@ -15,7 +15,7 @@ export default class ChatStore {
         makeAutoObservable(this);
     }
 
-    createHubConnection = (myChatModel: ChatModel, callUser: (string)=>void) => {
+    createHubConnection = (myChatModel: ChatModel, callUser: (responderId:string, callerName:string)=>void) => {
         if (myChatModel.clinicaId) {
             this.hubConnection = new HubConnectionBuilder()
                 .withUrl(this.chatUrl + '?clinicaId=' + myChatModel.clinicaId)
@@ -26,10 +26,16 @@ export default class ChatStore {
             //this.hubConnection.start().catch(error => console.log('chat hub nu s-a putut conecta : ', error));
 
             this.hubConnection.on('NeedAResponder', (chatModel: ChatModel) => {
+                console.log("needAResponder, callerName = "+ chatModel.callerName);
+                if(chatModel.callerSocketId === myChatModel.callerSocketId){
+                    console.log("am primit cererea care am emis-o tot eu, callerSocketId =" + myChatModel.callerSocketId  + " name=" + myChatModel.callerName);
+                    return;
+                }
                 runInAction( async () => {
                     chatModel.responderSocketId = myChatModel.callerSocketId;
                     chatModel.responderName = myChatModel.callerName;
                     try {
+                        console.log("trimit ca sunt disponibil...responderSocketId =" + myChatModel.callerSocketId  + " name=" + myChatModel.callerName);
                         await this.hubConnection?.invoke('ResponderFound', chatModel);
                     } catch (error) {
                         console.log(error);
@@ -38,10 +44,19 @@ export default class ChatStore {
             })
 
             this.hubConnection.on('ResponderFound', (chatModel: ChatModel) => {
-                if(chatModel.responderSocketId && chatModel.responderName.includes("dr")){
-                    //am gasit un responder, acum il apelez prin canalul de video
+                console.log("am intrat in RespondeFound....-> responderId="+chatModel.responderSocketId + ", callerName="+ chatModel.callerName +", mychatModel=" +myChatModel);
+                if(chatModel.responderSocketId === myChatModel.callerSocketId){
+                    console.log("Vad ca m-am dat disponibil tot pe mine..., nu ma mai sun DEGEABA,  callerSocketId =" + myChatModel.callerSocketId  + " name=" + myChatModel.callerName);
+                    return;
+                }
+                else if(chatModel.responderSocketId){
+                    console.log("am gasit un responder = " + chatModel.responderSocketId + ", acum il apelez prin canalul de video");
                     runInAction(() => {
-                        callUser(chatModel.responderSocketId);
+                        console.log("OnResponderFound-> inchid SignalR si apelez callUser");
+                        this.stopHubConnection();
+
+                        console.log("apelez callUser din functia OnRespondFound, chatModel="+chatModel + ", mychatModel=" + myChatModel);
+                        callUser(chatModel.responderSocketId, myChatModel.callerName);
                      });
                 }
 
@@ -50,6 +65,7 @@ export default class ChatStore {
     }
 
     stopHubConnection = () => {
+        console.log("stopHubConnection - opresc SignaR ");
         this.hubConnection?.stop().catch(error => console.log('Error stopping connection: ', error));
     }
 

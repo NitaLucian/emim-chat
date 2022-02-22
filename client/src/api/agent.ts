@@ -8,8 +8,7 @@ const sleep = (delay:number) =>{
     });
 }
 
-    // axios.defaults.baseURL = 'http://82.77.27.57:56002/api';
-    //axios.defaults.baseURL = 'http://localhost:5006/api';
+
     axios.defaults.baseURL = UrlStore.urlEmimApi;
 
     //asta doar sa ma joc cu interceptorii--aici pot insera diverse chestii
