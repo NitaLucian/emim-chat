@@ -16,23 +16,11 @@ const ContextProvider = ({ children }) => {
   const [name, setName] = useState('');
   const [call, setCall] = useState({});
   const [me, setMe] = useState('');
-  const [myAudioNotification, setMyAudio] = useState(new Audio('/assets/CallingYou.mp3'));
   const [chatStore, setChatStore] = useState(null);
 
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
-
-  function startAudioNotification(){
-    console.log("dau drumul la sonerie, sa ma sune..." + myAudioNotification);
-    myAudioNotification.play();
-       // setTimeout(function(){ audio.pause(); audio.currentTime = 0;}, 10000);
-  }
-  function stopAudioNotification(){
-    console.log("opresc soneria...")
-    myAudioNotification.pause(); 
-    myAudioNotification.currentTime = 0;
-  }
 
 
   useEffect(() => {
@@ -44,44 +32,41 @@ const ContextProvider = ({ children }) => {
 
     socket.on('me', (id) => {
       setMe(id);
-      console.log("client, am primit me = " + me);
       console.log("client, am primit me Id = " + id);
     });
 
 
     socket.on('callUser', ({ from, name: callerName, signal }) => {
-      if(from === me){
-        console.log("ma sun pe mine insusi, nu fac nimic..." + name);
-        return;
-      }
-      startAudioNotification();
-      console.log("sunt apelat de catre "+ from + " name= " +callerName);
+      // if(from === me){
+      //   console.log("ma sun pe mine insusi, nu fac nimic..." + name);
+      //   return;
+      // }
       setCall({ isReceivingCall: true, from, name: callerName, signal });
+
     });
   }, []);
 
 
   const answerCall = () => {
-    console.log("am raspuns la call, ar trebui sa se opreasca calling you");
-    stopAudioNotification();
-    //opresc si SignalR, sa nu se suprapuna pe acelasi webSocket cu video-chat-ul
-    console.log("incerc sa opresc SignalR....");
-    chatStore.stopHubConnection();
-    setCallAccepted(true);
 
-    const peer = new Peer({ initiator: false, trickle: false, stream });
+      //opresc si SignalR, sa nu se suprapuna pe acelasi webSocket cu video-chat-ul
+      console.log("incerc sa opresc SignalR....");
+      chatStore.stopHubConnection();
+      setCallAccepted(true);
 
-    peer.on('signal', (data) => {
-      socket.emit('answerCall', { signal: data, to: call.from });
-    });
+      const peer = new Peer({ initiator: false, trickle: false, stream });
 
-    peer.on('stream', (currentStream) => {
-      userVideo.current.srcObject = currentStream;
-    });
+      peer.on('signal', (data) => {
+        socket.emit('answerCall', { signal: data, to: call.from });
+      });
 
-    peer.signal(call.signal);
+      peer.on('stream', (currentStream) => {
+        userVideo.current.srcObject = currentStream;
+      });
 
-    connectionRef.current = peer;
+      peer.signal(call.signal);
+
+      connectionRef.current = peer;
   };
 
   const callUser = (id,callerName) => {
